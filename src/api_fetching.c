@@ -2,7 +2,7 @@
 * @Author: karlosiric
 * @Date:   2025-06-26 11:14:23
 * @Last Modified by:   karlosiric
-* @Last Modified time: 2025-06-26 13:18:06
+* @Last Modified time: 2025-06-26 14:17:42
 */
 
 
@@ -53,7 +53,7 @@ int fetch_api_data(const char *url, char **csv_response) {
 
     curl_easy_setopt(handle, CURLOPT_URL, url);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_data);
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, &api_data);
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, api_data);
 
     CURLcode request = curl_easy_perform(handle);
     if (request != CURLE_OK) {
@@ -69,52 +69,6 @@ int fetch_api_data(const char *url, char **csv_response) {
     free(api_data);
 
     return 0;
-}
-
-s_CovidData *parse_covid_csv(const char *csv_format) {
-    s_CovidData *cd = malloc(sizeof(s_CovidData));
-    if (!cd) {
-        fprintf(stderr, "Failed to allocate enough space for the Covid Data container: %s\n", strerror(errno));
-        return NULL;
-    }
-
-    cd->records = malloc(INITIAL_RECORDS_SIZE * sizeof(s_CovidRecord));
-    if (!cd->records) {
-        fprintf(stderr, "Failed to allocate enough space for memory for covid records: %s\n", strerror(errno));
-        free(cd);
-        return NULL;
-    }
-
-    cd->size = INITIAL_RECORDS_SIZE;
-    cd->count = 0;
-
-    if (cd->count >= cd->size) {
-        size_t new_size = cd->size * 2;
-
-        s_CovidRecord *new_records = realloc(cd->records, new_size * sizeof(s_CovidRecord));
-        if (!new_records) {
-            fprintf(stderr, "Reallocation of memory failed: %s\n", strerror(errno));
-        }
-
-        cd->records = new_records;
-        cd->size = new_size;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-    // TODO: Not done yet now we need to parse that and store it into the records
-    // cd->records[cd->count] =
-    cd->count++;
-
 }
 
 
@@ -149,6 +103,63 @@ s_CovidRecord parse_csv_line(const char *line) {
     free(line_copy);
     return record;
 }
+
+s_CovidData *parse_covid_csv(const char *csv_format) {
+
+    s_CovidData *cd = malloc(sizeof(s_CovidData));
+    if (!cd) {
+        fprintf(stderr, "Failed to allocate enough space for the Covid Data container: %s\n", strerror(errno));
+        return NULL;
+    }
+
+    cd->records = malloc(INITIAL_RECORDS_SIZE * sizeof(s_CovidRecord));
+    if (!cd->records) {
+        fprintf(stderr, "Failed to allocate enough space for memory for covid records: %s\n", strerror(errno));
+        free(cd);
+        return NULL;
+    }
+
+    cd->size = INITIAL_RECORDS_SIZE;
+    cd->count = 0;
+
+
+    char *csv_format_copy = strdup(csv_format);
+    if (!csv_format_copy) {
+        fprintf(stderr, "Couldnt make a copy of the csv format data %s\n", strerror(errno)); 
+        free_covid_data(cd);
+        return NULL;
+    }
+
+    
+    char *line = strtok(csv_format_copy, "\n");
+    
+    line = strtok(NULL, "\n");
+
+    while(line != NULL) {
+        if (cd->count >= cd->size) {
+            size_t new_size = cd->size * 2;
+            s_CovidRecord *new_records = realloc(cd->records, new_size * sizeof(s_CovidRecord));
+            if (!new_records) {
+                fprintf(stderr, "Memory reallocation failed %s\n", strerror(errno));
+                free(csv_format_copy);
+                free_covid_data(cd);
+                return NULL;
+            }
+            cd->records = new_records;
+            cd->size = new_size;
+        }
+
+        s_CovidRecord record = parse_csv_line(line);
+        cd->records[cd->count] = record;
+        cd->count++;
+
+        line = strtok(NULL, "\n");
+    }
+    
+    free(csv_format_copy);
+    return cd;
+}
+
 
 s_CovidData *create_covid_data(size_t initial_size) {
     s_CovidData *data = malloc(sizeof(s_CovidData));
