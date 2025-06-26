@@ -2,7 +2,7 @@
 * @Author: karlosiric
 * @Date:   2025-06-26 11:14:23
 * @Last Modified by:   karlosiric
-* @Last Modified time: 2025-06-26 13:13:34
+* @Last Modified time: 2025-06-26 13:18:06
 */
 
 
@@ -151,10 +151,18 @@ s_CovidRecord parse_csv_line(const char *line) {
 }
 
 s_CovidData *create_covid_data(size_t initial_size) {
-    s_CovidData *data = malloc(initial_size * sizeof(s_CovidData));
+    s_CovidData *data = malloc(sizeof(s_CovidData));
 
     if (!data) {
         fprintf(stderr, "Memory allocation failed: %s\n", strerror(errno));
+        return NULL;
+    }
+
+    data->records = malloc(initial_size * sizeof(s_CovidRecord));
+
+    if (!data->records) {
+        fprintf(stderr, "Memory allocation failed for records: %s\n", strerror(errno));
+        free_covid_data(data);
         return NULL;
     }
 
@@ -165,14 +173,10 @@ s_CovidData *create_covid_data(size_t initial_size) {
 
 void free_covid_data(s_CovidData *data) {
     if (data) {
-        if (data->records) {
-            free(data->records);
-        }
+        free(data->records);
         free(data);
         return ;
     }
-
-    fprintf(stderr, "Memory allocated pointing to NULL: %s\n", strerror(errno));
 
     return ;
 }
