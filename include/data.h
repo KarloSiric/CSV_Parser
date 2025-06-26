@@ -1,6 +1,8 @@
 #ifndef DATA_H
 #define DATA_H 
 
+#define INITIAL_RECORDS_SIZE            1000
+
 #include <stddef.h>
 typedef struct {
     char fips[10];                      // FIPS code (usually empty)
@@ -35,6 +37,7 @@ void free_covid_data(s_CovidData *data);
 
 static int write_data(void *buffer, size_t size, size_t nmemb, void *userp);
 int fetch_api_data(const char *url, char **csv_response);
+s_CovidData *parse_covid_csv(const char *csv_format);
 
 
 #endif
